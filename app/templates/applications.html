@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Başvurular — Job Tracker{% endblock %}
+{% block content %}
+<h1>Başvurular</h1>
+<form class="filters" method="get" action="/applications">
+  <label>
+    Durum
+    <select name="status">
+      <option value="">Tümü</option>
+      {% for st in statuses %}
+      <option value="{{ st }}" {% if status_filter == st %}selected{% endif %}>{{ st }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>
+    Ara
+    <input type="search" name="q" value="{{ q }}" placeholder="şirket, rol, lokasyon">
+  </label>
+  <button type="submit">Filtrele</button>
+</form>
+
+{% if rows %}
+<table>
+  <thead>
+    <tr>
+      <th>Tarih</th>
+      <th>Rol</th>
+      <th>Şirket</th>
+      <th>Kaynak</th>
+      <th>Durum</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td>{{ row.applied_at }}</td>
+      <td><a href="/applications/{{ row.id }}">{{ row.title }}</a></td>
+      <td>{{ row.company }}</td>
+      <td>{{ row.source }}</td>
+      <td>
+        <select class="status-select" data-id="{{ row.id }}">
+          {% for st in statuses %}
+          <option value="{{ st }}" {% if row.status == st %}selected{% endif %}>{{ st }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td>
+        <form method="post" action="/applications/{{ row.id }}/delete" onsubmit="return confirm('Silinsin mi?')">
+          <button type="submit" class="danger">Sil</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">Eşleşen başvuru yok.</p>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+  document.querySelectorAll(".status-select").forEach((el) => {
+    el.addEventListener("change", async () => {
+      await fetch(`/api/applications/${el.dataset.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: el.value }),
+      });
+    });
+  });
+</script>
+{% endblock %}

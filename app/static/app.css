@@ -1,0 +1,109 @@
+:root {
+  --bg: #0f1419;
+  --surface: #1a222c;
+  --surface-2: #243040;
+  --text: #e8eef4;
+  --muted: #93a4b8;
+  --accent: #3d9cf0;
+  --danger: #e06c75;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.45;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.4rem;
+  background: var(--surface);
+}
+.brand { font-weight: 700; color: var(--text); }
+nav { display: flex; gap: 1rem; }
+nav a[aria-current="page"] { color: var(--text); font-weight: 600; }
+main { max-width: 1100px; margin: 0 auto; padding: 1.4rem; }
+h1 { margin: 0 0 0.8rem; font-size: 1.6rem; }
+h2 { margin: 0 0 0.7rem; font-size: 1.1rem; }
+.muted { color: var(--muted); }
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8rem;
+  margin-bottom: 1.2rem;
+}
+.stats article, .panel {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+.label { margin: 0; color: var(--muted); font-size: 0.85rem; }
+.num { margin: 0.2rem 0 0; font-size: 1.8rem; font-weight: 700; }
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+.counts { list-style: none; margin: 0; padding: 0; }
+.counts li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0;
+}
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 0.45rem 0.35rem; }
+th { color: var(--muted); font-weight: 600; font-size: 0.85rem; }
+.pill {
+  display: inline-block;
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.8rem;
+}
+.filters, .row {
+  display: flex;
+  gap: 0.7rem;
+  align-items: end;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--muted); }
+input, select, textarea, button {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 0;
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+}
+textarea { width: 100%; resize: vertical; }
+button {
+  background: var(--accent);
+  color: #041018;
+  font-weight: 650;
+  cursor: pointer;
+}
+button.danger { background: var(--danger); color: #fff; }
+.stack { display: flex; flex-direction: column; gap: 0.8rem; }
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.7rem;
+}
+.skip { flex-direction: row; align-items: center; gap: 0.4rem; }
+.crumb { color: var(--muted); }
+.job-card { margin-bottom: 0.8rem; }
+
+@media (max-width: 800px) {
+  .stats, .grid-2 { grid-template-columns: 1fr; }
+}

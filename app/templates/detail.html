@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }} — Job Tracker{% endblock %}
+{% block content %}
+<p class="crumb"><a href="/applications">Başvurular</a> / {{ item.title }}</p>
+<h1>{{ item.title }}</h1>
+<p class="muted">{{ item.company }}{% if item.location %} · {{ item.location }}{% endif %}</p>
+
+<form id="detail-form" class="stack">
+  <div class="grid-2">
+    <label>Rol <input name="title" value="{{ item.title }}" required></label>
+    <label>Şirket <input name="company" value="{{ item.company }}" required></label>
+    <label>Lokasyon <input name="location" value="{{ item.location or '' }}"></label>
+    <label>Kaynak
+      <select name="source">
+        {% for src in sources %}
+        <option value="{{ src }}" {% if item.source == src %}selected{% endif %}>{{ src }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Durum
+      <select name="status">
+        {% for st in statuses %}
+        <option value="{{ st }}" {% if item.status == st %}selected{% endif %}>{{ st }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Başvuru tarihi <input type="date" name="applied_at" value="{{ item.applied_at }}"></label>
+    <label>Follow-up <input type="date" name="follow_up_at" value="{{ item.follow_up_at or '' }}"></label>
+    <label>İlan URL <input name="job_url" value="{{ item.job_url or '' }}"></label>
+  </div>
+  <label>Notlar
+    <textarea name="notes" rows="4">{{ item.notes or '' }}</textarea>
+  </label>
+  <label>İlan metni
+    <textarea name="description" rows="12">{{ item.description or '' }}</textarea>
+  </label>
+  <p id="save-msg" class="muted" hidden></p>
+  <button type="submit">Kaydet</button>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+  const form = document.getElementById("detail-form");
+  const msg = document.getElementById("save-msg");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(form).entries());
+    const res = await fetch("/api/applications/{{ item.id }}", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    msg.hidden = false;
+    msg.textContent = res.ok ? "Kaydedildi." : "Kayıt başarısız.";
+  });
+</script>
+{% endblock %}

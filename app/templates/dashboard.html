@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Job Tracker{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+<section class="stats">
+  <article>
+    <p class="label">Bugün</p>
+    <p class="num">{{ stats.today }}</p>
+  </article>
+  <article>
+    <p class="label">Son 7 gün</p>
+    <p class="num">{{ stats.week }}</p>
+  </article>
+  <article>
+    <p class="label">Toplam</p>
+    <p class="num">{{ stats.total }}</p>
+  </article>
+</section>
+
+<div class="grid-2">
+  <section class="panel">
+    <h2>Role göre</h2>
+    {% if stats.by_title %}
+    <ul class="counts">
+      {% for row in stats.by_title %}
+      <li><span>{{ row.title }}</span><strong>{{ row.cnt }}</strong></li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">Henüz başvuru yok. <a href="/paste">İlan yapıştır</a>.</p>
+    {% endif %}
+  </section>
+  <section class="panel">
+    <h2>Durum</h2>
+    <ul class="counts">
+      {% for st in statuses %}
+      <li><span>{{ st }}</span><strong>{{ stats.by_status.get(st, 0) }}</strong></li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+
+<section class="panel">
+  <h2>Son kayıtlar</h2>
+  {% if recent %}
+  <table>
+    <thead>
+      <tr>
+        <th>Tarih</th>
+        <th>Rol</th>
+        <th>Şirket</th>
+        <th>Durum</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in recent %}
+      <tr>
+        <td>{{ row.applied_at }}</td>
+        <td><a href="/applications/{{ row.id }}">{{ row.title }}</a></td>
+        <td>{{ row.company }}</td>
+        <td><span class="pill">{{ row.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">Kayıt yok.</p>
+  {% endif %}
+</section>
+{% endblock %}

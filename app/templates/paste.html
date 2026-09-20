@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Toplu yapıştır — Job Tracker{% endblock %}
+{% block content %}
+<h1>Toplu yapıştır</h1>
+<p class="muted">Bir veya birden fazla ilan metnini yapıştır. Birden fazla ilanı <code>---</code> ile ayır. OpenAI key varsa title/şirket oradan çıkarılır; yoksa kural tabanlı parse kullanılır. Kayıt önizlemeden sonra yazılır.</p>
+
+<label>İlan metinleri
+  <textarea id="raw" rows="16" placeholder="Senior Backend Engineer at Acme&#10;Istanbul · Hybrid&#10;https://...&#10;&#10;---&#10;&#10;İkinci ilan..."></textarea>
+</label>
+<div class="row">
+  <button type="button" id="parse-btn">Parse et</button>
+  <span id="parse-meta" class="muted"></span>
+</div>
+
+<div id="preview" hidden>
+  <h2>Önizleme</h2>
+  <p class="muted">İstemediğin kartı atla; diğerlerini kaydet.</p>
+  <div id="cards"></div>
+  <button type="button" id="save-btn">Seçilenleri kaydet</button>
+  <p id="save-meta" class="muted"></p>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  const sources = {{ sources | tojson }};
+  const raw = document.getElementById("raw");
+  const parseBtn = document.getElementById("parse-btn");
+  const parseMeta = document.getElementById("parse-meta");
+  const preview = document.getElementById("preview");
+  const cards = document.getElementById("cards");
+  const saveBtn = document.getElementById("save-btn");
+  const saveMeta = document.getElementById("save-meta");
+
+  function field(label, name, value, type = "text") {
+    const id = `${name}-${Math.random().toString(16).slice(2)}`;
+    if (name === "source") {
+      const opts = sources.map((s) => `<option value="${s}" ${s === value ? "selected" : ""}>${s}</option>`).join("");
+      return `<label>${label}<select name="${name}">${opts}</select></label>`;
+    }
+    if (name === "description" || name === "notes") {
+      return `<label>${label}<textarea name="${name}" rows="6">${value ?? ""}</textarea></label>`;
+    }
+    return `<label>${label}<input type="${type}" name="${name}" value="${value ?? ""}"></label>`;
+  }
+
+  function escapeAttr(v) {
+    return String(v ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+  }
+
+  parseBtn.addEventListener("click", async () => {
+    parseMeta.textContent = "Parse ediliyor…";
+    const res = await fetch("/api/parse", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: raw.value }),
+    });
+    const data = await res.json();
+    parseMeta.textContent = `parser: ${data.parser}${data.error ? " (fallback: " + data.error + ")" : ""} — ${data.jobs.length} ilan`;
+    cards.innerHTML = "";
+    data.jobs.forEach((job, i) => {
+      const wrap = document.createElement("article");
+      wrap.className = "panel job-card";
+      wrap.innerHTML = `
+        <header class="card-head">
+          <strong>İlan ${i + 1}</strong>
+          <label class="skip"><input type="checkbox" class="include" checked> Kaydet</label>
+        </header>
+        <div class="grid-2">
+          ${field("Rol", "title", escapeAttr(job.title))}
+          ${field("Şirket", "company", escapeAttr(job.company))}
+          ${field("Lokasyon", "location", escapeAttr(job.location))}
+          ${field("Kaynak", "source", job.source)}
+          ${field("URL", "job_url", escapeAttr(job.job_url))}
+          ${field("Başvuru tarihi", "applied_at", escapeAttr(job.applied_at), "date")}
+        </div>
+        ${field("Not", "notes", escapeAttr(job.notes))}
+        ${field("Açıklama", "description", escapeAttr(job.description))}
+      `;
+      cards.appendChild(wrap);
+    });
+    preview.hidden = data.jobs.length === 0;
+  });
+
+  saveBtn.addEventListener("click", async () => {
+    const items = [];
+    cards.querySelectorAll(".job-card").forEach((card) => {
+      if (!card.querySelector(".include").checked) return;
+      const fd = new FormData();
+      card.querySelectorAll("input, select, textarea").forEach((el) => {
+        if (el.classList.contains("include")) return;
+        fd.set(el.name, el.value);
+      });
+      const obj = Object.fromEntries(fd.entries());
+      if (!obj.title || !obj.company) return;
+      items.push(obj);
+    });
+    if (!items.length) {
+      saveMeta.textContent = "Kaydedilecek ilan yok (title + company zorunlu).";
+      return;
+    }
+    const res = await fetch("/api/applications/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+    const data = await res.json();
+    saveMeta.textContent = res.ok ? `${data.count} başvuru kaydedildi.` : "Kayıt başarısız.";
+    if (res.ok) window.location.href = "/applications";
+  });
+</script>
+{% endblock %}

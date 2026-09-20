@@ -1,0 +1,11 @@
+.env
+data/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.db
+.Python
+.pytest_cache/
+.mypy_cache/
