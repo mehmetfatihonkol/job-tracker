@@ -103,6 +103,37 @@ button.danger { background: var(--danger); color: #fff; }
 .skip { flex-direction: row; align-items: center; gap: 0.4rem; }
 .crumb { color: var(--muted); }
 .job-card { margin-bottom: 0.8rem; }
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.35rem;
+  height: 160px;
+  margin-top: 0.4rem;
+}
+.bar-col {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.2rem;
+}
+.bar {
+  width: 100%;
+  max-width: 28px;
+  min-height: 3px;
+  background: var(--accent);
+  border-radius: 4px 4px 0 0;
+}
+.bar.is-empty { background: var(--surface-2); }
+.bar-n, .bar-d {
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1;
+}
+.bar-d { letter-spacing: -0.02em; }
 
 @media (max-width: 800px) {
   .stats, .grid-2 { grid-template-columns: 1fr; }

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -185,10 +185,29 @@ def dashboard_stats() -> dict[str, Any]:
                 """
             )
         ]
+        counted = {
+            row["d"]: int(row["cnt"])
+            for row in conn.execute(
+                """
+                SELECT date(applied_at) AS d, COUNT(*) AS cnt
+                FROM applications
+                WHERE date(applied_at) >= date('now', 'localtime', '-13 days')
+                GROUP BY date(applied_at)
+                """
+            )
+        }
+    today_d = date.today()
+    by_day = []
+    for i in range(13, -1, -1):
+        d = (today_d - timedelta(days=i)).isoformat()
+        by_day.append({"date": d, "cnt": counted.get(d, 0)})
+    by_day_max = max((d["cnt"] for d in by_day), default=0)
     return {
         "total": total,
         "today": today,
         "week": week,
         "by_status": by_status,
         "by_title": by_title,
+        "by_day": by_day,
+        "by_day_max": by_day_max,
     }

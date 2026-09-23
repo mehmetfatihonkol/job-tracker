@@ -17,6 +17,23 @@
   </article>
 </section>
 
+<section class="panel">
+  <h2>Gün gün (14 gün)</h2>
+  <div class="bars" role="img" aria-label="Son 14 günde günlük başvuru sayısı">
+    {% for day in stats.by_day %}
+    <div class="bar-col">
+      <div
+        class="bar{% if day.cnt == 0 %} is-empty{% endif %}"
+        style="height: {% if stats.by_day_max %}{{ (day.cnt / stats.by_day_max * 100)|round }}{% else %}0{% endif %}%"
+        title="{{ day.date }}: {{ day.cnt }}"
+      ></div>
+      <span class="bar-n">{{ day.cnt }}</span>
+      <span class="bar-d">{{ day.date[5:] }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
 <div class="grid-2">
   <section class="panel">
     <h2>Role göre</h2>
