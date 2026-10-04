@@ -1,11 +1,20 @@
+# Local secrets and personal data
 .env
 data/
+*.db
+*.csv
+
+# Python
 .venv/
 venv/
 __pycache__/
 *.py[cod]
 *$py.class
-*.db
 .Python
+
+# Tooling caches
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/

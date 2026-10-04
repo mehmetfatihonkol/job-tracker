@@ -1,73 +1,149 @@
 {% extends "base.html" %}
+{% from "components/charts.html" import legend, series_panel, cumulative_chart, calendar, calendar_legend %}
 {% block title %}Dashboard — Job Tracker{% endblock %}
 {% block content %}
-<h1>Dashboard</h1>
-<section class="stats">
-  <article>
-    <p class="label">Bugün</p>
-    <p class="num">{{ stats.today }}</p>
-  </article>
-  <article>
-    <p class="label">Son 7 gün</p>
-    <p class="num">{{ stats.week }}</p>
-  </article>
-  <article>
-    <p class="label">Toplam</p>
-    <p class="num">{{ stats.total }}</p>
-  </article>
-</section>
-
-<section class="panel">
-  <h2>Gün gün (14 gün)</h2>
-  <div class="bars" role="img" aria-label="Son 14 günde günlük başvuru sayısı">
-    {% for day in stats.by_day %}
-    <div class="bar-col">
-      <div
-        class="bar{% if day.cnt == 0 %} is-empty{% endif %}"
-        style="height: {% if stats.by_day_max %}{{ (day.cnt / stats.by_day_max * 100)|round }}{% else %}0{% endif %}%"
-        title="{{ day.date }}: {{ day.cnt }}"
-      ></div>
-      <span class="bar-n">{{ day.cnt }}</span>
-      <span class="bar-d">{{ day.date[5:] }}</span>
-    </div>
+{% set kpis = dashboard.kpis %}
+{% set period_label = dashboard.period.label %}
+<div class="period-bar">
+  <h1>Dashboard</h1>
+  <div class="segmented" role="group" aria-label="Dönem seçimi">
+    {% for period in periods %}
+    <a href="/?range={{ period.value }}" {% if dashboard.period == period %}aria-current="true"{% endif %}>{{ period.label }}</a>
     {% endfor %}
   </div>
+</div>
+<p class="muted window-label">Dönem: <strong>{{ dashboard.window_label }}</strong> ({{ dashboard.window_days }} gün)</p>
+
+<section class="stats">
+  <article><p class="label">Bugün</p><p class="num">{{ kpis.today }}</p></article>
+  <article><p class="label">Bu hafta</p><p class="num">{{ kpis.this_week }}</p></article>
+  <article><p class="label">Bu ay</p><p class="num">{{ kpis.this_month }}</p></article>
+  <article><p class="label">Başvuru ({{ period_label }})</p><p class="num">{{ kpis.period_applied }}</p></article>
+  <article><p class="label">Red ({{ period_label }})</p><p class="num is-rejected">{{ kpis.period_rejected }}</p></article>
+  <article><p class="label">Red oranı ({{ period_label }})</p><p class="num">%{{ kpis.rejection_rate }}</p></article>
 </section>
+
+<div class="section-head">
+  <h2>Başvuru ve red trendi</h2>
+  {{ legend() }}
+</div>
+<div class="trend-grid">
+  {{ series_panel("Günlük", dashboard.daily, "günlük", "Seçili dönemde günlük başvuru ve red sayısı", with_legend=false) }}
+  {{ series_panel("Haftalık", dashboard.weekly, "haftalık", "Seçili dönemde haftalık başvuru ve red sayısı", with_legend=false) }}
+  {{ series_panel("Aylık", dashboard.monthly, "aylık", "Seçili dönemde aylık başvuru ve red sayısı", with_legend=false) }}
+</div>
 
 <div class="grid-2">
   <section class="panel">
-    <h2>Role göre</h2>
-    {% if stats.by_title %}
-    <ul class="counts">
-      {% for row in stats.by_title %}
-      <li><span>{{ row.title }}</span><strong>{{ row.cnt }}</strong></li>
+    <div class="panel-head">
+      <h2>Kümülatif</h2>
+      {{ legend() }}
+    </div>
+    <p class="muted summary">Toplam {{ dashboard.cumulative.applied_total }} başvuru · {{ dashboard.cumulative.rejected_total }} red</p>
+    {{ cumulative_chart(dashboard.cumulative) }}
+  </section>
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Takvim</h2>
+      {{ calendar_legend() }}
+    </div>
+    {{ calendar(dashboard.calendar) }}
+  </section>
+</div>
+
+<div class="grid-2">
+  <section class="panel">
+    <h2>Başvuru hunisi</h2>
+    <p class="muted summary">Mevcut duruma göre; reddedilenlerin hangi aşamada elendiği bilinmiyor.</p>
+    <ul class="hbars">
+      {% for stage in dashboard.funnel %}
+      <li>
+        <div class="hbar-head">
+          <span>{{ stage.status.label }}</span>
+          <span><strong>{{ stage.count }}</strong>{% if stage.step_pct is not none %} <span class="muted">· önceki aşamadan %{{ stage.step_pct }}</span>{% endif %}</span>
+        </div>
+        <div class="hbar-track"><div class="hbar-fill" style="width: {{ stage.pct }}%"></div></div>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% set companies = dashboard.companies %}
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Şirketler</h2>
+      {{ legend() }}
+    </div>
+    <p class="muted summary">Birden fazla başvurulan şirketler (tüm zamanlar). {{ frequent_company_threshold }}+ başvuru işaretlenir.</p>
+    {% if companies.repeated %}
+    <ul class="hbars">
+      {% for row in companies.repeated %}
+      {% set stats = row.stats %}
+      <li>
+        <div class="hbar-head">
+          <span>
+            <a href="/applications?company={{ stats.company|urlencode }}">{{ stats.company }}</a>
+            {% if row.frequent %}<span class="badge is-warning">çok başvuru</span>{% endif %}
+          </span>
+          <span><strong>{{ stats.total }}</strong> <span class="muted">· {{ stats.rejected }} red · {{ stats.waiting }} bekliyor</span></span>
+        </div>
+        <div class="hbar-track">
+          <div class="hbar-fill{% if row.frequent %} is-warning{% endif %}" style="width: {{ row.pct }}%">
+            <div class="hbar-rejected" style="width: {{ (stats.rejected / stats.total * 100)|round }}%"></div>
+          </div>
+        </div>
+      </li>
       {% endfor %}
     </ul>
     {% else %}
-    <p class="muted">Henüz başvuru yok. <a href="/paste">İlan yapıştır</a>.</p>
+    <p class="muted">Henüz aynı şirkete birden fazla başvuru yok.</p>
+    {% endif %}
+    {% if companies.single_application_companies %}
+    <p class="muted summary">+{{ companies.single_application_companies }} şirkete tek başvuru · <a href="/applications">tümünü gör</a></p>
     {% endif %}
   </section>
-  <section class="panel">
-    <h2>Durum</h2>
-    <ul class="counts">
-      {% for st in statuses %}
-      <li><span>{{ st }}</span><strong>{{ stats.by_status.get(st, 0) }}</strong></li>
-      {% endfor %}
-    </ul>
-  </section>
 </div>
+
+<section class="panel">
+  <h2>Durum</h2>
+  <ul class="counts is-inline">
+    {% for status in statuses %}
+    <li><span>{{ status.label }}</span><strong>{{ dashboard.status_counts.get(status, 0) }}</strong></li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="panel">
+  <h2>Cevapsız bekleyenler ({{ dashboard.awaiting_response|length }})</h2>
+  <p class="muted summary">{{ dashboard.stale_after_days }} günden uzun süredir "{{ Status.APPLIED.label }}" durumunda olan başvurular (tüm zamanlar).</p>
+  {% if dashboard.awaiting_response %}
+  <table>
+    <thead>
+      <tr><th>Başvuru</th><th>Bekleme</th><th>Rol</th><th>Şirket</th><th>Follow-up</th></tr>
+    </thead>
+    <tbody>
+      {% for item in dashboard.awaiting_response %}
+      {% set app = item.application %}
+      <tr>
+        <td>{{ app.applied_at }}</td>
+        <td><span class="pill">{{ item.days_waiting }} gün</span></td>
+        <td><a href="/applications/{{ app.id }}">{{ app.title }}</a></td>
+        <td>{{ app.company }}</td>
+        <td>{{ app.follow_up_at or "—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">{{ dashboard.stale_after_days }} günden uzun bekleyen başvuru yok.</p>
+  {% endif %}
+</section>
 
 <section class="panel">
   <h2>Son kayıtlar</h2>
   {% if recent %}
   <table>
     <thead>
-      <tr>
-        <th>Tarih</th>
-        <th>Rol</th>
-        <th>Şirket</th>
-        <th>Durum</th>
-      </tr>
+      <tr><th>Tarih</th><th>Rol</th><th>Şirket</th><th>Durum</th></tr>
     </thead>
     <tbody>
       {% for row in recent %}
@@ -75,7 +151,7 @@
         <td>{{ row.applied_at }}</td>
         <td><a href="/applications/{{ row.id }}">{{ row.title }}</a></td>
         <td>{{ row.company }}</td>
-        <td><span class="pill">{{ row.status }}</span></td>
+        <td><span class="pill">{{ row.status.label }}</span></td>
       </tr>
       {% endfor %}
     </tbody>

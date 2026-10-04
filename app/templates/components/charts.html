@@ -1,0 +1,81 @@
+{% macro legend() -%}
+<p class="legend">
+  <span><i class="swatch"></i>Başvuru</span>
+  <span><i class="swatch is-rejected"></i>Red</span>
+</p>
+{%- endmacro %}
+
+{% macro bar_slot(value, pct, modifier="") -%}
+<div class="bar-slot">
+  <div class="bar{{ modifier }}{% if not value %} is-empty{% endif %}" style="height: {{ pct }}%"></div>
+  {% if value %}<span class="bar-v{{ modifier }}" style="bottom: {{ pct }}%">{{ value }}</span>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro pair_chart(series, aria_label) -%}
+{% set n = series.buckets|length %}
+<div class="bars{% if n > 14 %} is-dense{% endif %}{% if n > 31 %} is-compact{% endif %}" role="img" aria-label="{{ aria_label }}">
+  {% for bucket in series.buckets %}
+  {% set spec = bucket.spec %}
+  <div class="bar-col{% if spec.weekend %} is-weekend{% endif %}{% if spec.current %} is-current{% endif %}"
+       title="{{ spec.title }}: {{ bucket.applied }} başvuru, {{ bucket.rejected }} red">
+    <div class="bar-pair">
+      {{ bar_slot(bucket.applied, bucket.applied_pct) }}
+      {{ bar_slot(bucket.rejected, bucket.rejected_pct, " is-rejected") }}
+    </div>
+    <span class="bar-d">{{ spec.label }}</span>
+  </div>
+  {% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro series_panel(title, series, average_label, aria_label, with_legend=true) -%}
+<section class="panel">
+  <div class="panel-head">
+    <h2>{{ title }}</h2>
+    {% if with_legend %}{{ legend() }}{% endif %}
+  </div>
+  <p class="muted summary">
+    {{ series.applied_total }} başvuru · {{ series.rejected_total }} red ·
+    {{ average_label }} ort. {{ series.applied_average }}
+  </p>
+  {{ pair_chart(series, aria_label) }}
+</section>
+{%- endmacro %}
+
+{% macro cumulative_chart(cumulative) -%}
+<div class="line-chart">
+  <span class="axis-max">{{ cumulative.peak }}</span>
+  <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Kümülatif başvuru ve red sayısı">
+    <polygon class="area" points="{{ cumulative.applied_points }} 100,100 0,100"></polygon>
+    <polyline class="line" points="{{ cumulative.applied_points }}"></polyline>
+    <polyline class="line is-rejected" points="{{ cumulative.rejected_points }}"></polyline>
+  </svg>
+  <div class="axis-x"><span>{{ cumulative.start_label }}</span><span>{{ cumulative.end_label }}</span></div>
+</div>
+{%- endmacro %}
+
+{% macro calendar(weeks) -%}
+<div class="calendar" role="img" aria-label="Son haftalarda günlük başvuru yoğunluğu">
+  <span></span>
+  {% for weekday in ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"] %}
+  <span class="calendar-weekday">{{ weekday }}</span>
+  {% endfor %}
+  {% for week in weeks %}
+  <span class="calendar-month">{{ week.label }}</span>
+  {% for day in week.days %}
+  <span class="heat-cell lvl-{{ day.level }}{% if not day.inside %} is-out{% endif %}{% if day.rejected %} has-rejected{% endif %}{% if day.today %} is-today{% endif %}"
+        {% if day.inside %}title="{{ day.title }}"{% endif %}>{{ day.day }}</span>
+  {% endfor %}
+  {% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro calendar_legend() -%}
+<p class="legend">
+  <span>Az</span>
+  <i class="heat-cell lvl-1"></i><i class="heat-cell lvl-2"></i><i class="heat-cell lvl-3"></i><i class="heat-cell lvl-4"></i>
+  <span>Çok</span>
+  <span><i class="heat-cell has-rejected"></i>Red</span>
+</p>
+{%- endmacro %}
